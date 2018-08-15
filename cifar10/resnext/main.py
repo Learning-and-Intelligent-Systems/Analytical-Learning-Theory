@@ -1,3 +1,8 @@
+'''
+Created on Aug 15, 2018
+
+@author: vermavik
+'''
 from __future__ import division
 
 import os, sys, shutil, time, random
@@ -31,7 +36,7 @@ model_names = sorted(name for name in models.__dict__
 print (model_names)
 
 parser = argparse.ArgumentParser(description='Trains ResNeXt on CIFAR or ImageNet', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--dataset', type=str, default='cifar10', choices=['cifar10', 'cifar100', 'imagenet', 'svhn', 'stl10', 'mnist'], help='Choose between Cifar10/100 and ImageNet.')
+parser.add_argument('--dataset', type=str, default='cifar10', choices=['cifar10', 'cifar100', 'imagenet', 'svhn', 'stl10'], help='Choose between Cifar10/100 and ImageNet.')
 parser.add_argument('--arch', metavar='ARCH', default='resnext29_8_64', choices=model_names, help='model architecture: ' + ' | '.join(model_names) + ' (default: resnext29_8_64)')
 # Optimization options
 parser.add_argument('--epochs', type=int, default=300, help='Number of epochs to train.')
@@ -40,9 +45,6 @@ parser.add_argument('--singlecutout', action='store_true', default=False,
 parser.add_argument('--dualcutout', action='store_true', default=False,
                     help='whether to use dualcutout')
 parser.add_argument('--cutsize', type=int, default=16, help='cutout size.')
-parser.add_argument('--mixup', action='store_true', default=False,
-                    help='whether to use mixup or not')
-parser.add_argument('--mixup_alpha', type=float, default=1.0, help='alpha parameter for mixup')
 parser.add_argument('--dropout', action='store_true', default=False,
                     help='whether to use dropout or not in final layer')
 #parser.add_argument('--batch_size', type=int, default=128, help='Batch size.')
@@ -89,45 +91,8 @@ if args.use_cuda:
     torch.cuda.manual_seed_all(args.manualSeed)
 cudnn.benchmark = True
 
-class Net(nn.Module):
-    def __init__(self, input_shape):
-        super(Net, self).__init__()
-        self.maxpool = nn.MaxPool2d((2,2))
-        self.conv1 = nn.Conv2d(1,32,5)
-        self.conv2 = nn.Conv2d(32,32,5)
-        self.flat_shape = self.get_flat_shape(input_shape)            
-        self.fc1 = nn.Linear(self.flat_shape, 1024)
-        self.fc2 = nn.Linear(1024, 10)   
-        
-    def get_flat_shape(self, input_shape):
-        dummy = Variable(torch.zeros(1, *input_shape))
-        dummy = self.maxpool(self.conv1(dummy))
-        dummy = self.maxpool(self.conv2(dummy))
-        return dummy.data.view(1, -1).size(1)
-        
-    def forward(self, x_in):         
-        # ==== standard pass =========
-        # conv 1
-        x = self.conv1(x_in)
-        x = self.maxpool(x)
-        x = F.relu(x)
-        # conv 2
-        x = self.conv2(x)
-        x = self.maxpool(x)
-        x = F.relu(x)
-        # flatten
-        x = x.view(-1,self.flat_shape)
-        # fc 1
-        x = self.fc1(x)
-        x = F.relu(x)
-        #x = F.dropout(x, p=0.5, training=self.training)
-        # fc 2
-        x = self.fc2(x)
-        return x
 
-
-
-def experiment_name_non_mnist(arch='',
+def experiment_name(arch='',
                     epochs=400,
                     dropout=True,
                     batch_size=64,
@@ -139,8 +104,6 @@ def experiment_name_non_mnist(arch='',
                     dualcutout= False,
                     singlecutout= False,
                     cutsize = 16,
-                    mixup= False,
-                    mixup_alpha=1.0,
                     manualSeed=None,
                     job_id=None,
                     add_name=''):
@@ -159,10 +122,6 @@ def experiment_name_non_mnist(arch='',
         exp_name +='_cut_size_'+str(cutsize)
     else:
         exp_name+='_nocutout_'+'true'
-
-    if mixup:
-        exp_name += '_mixup_true'
-        exp_name += '_mixup_alpha'+ str(mixup_alpha)
 
     exp_name +='_batch_size_'+str(batch_size)
     exp_name += '_lr_'+str(lr)
@@ -222,88 +181,35 @@ def accuracy(output, target, topk=(1,)):
         res.append(correct_k.mul_(100.0 / batch_size))
     return res
 
-def mixup_data(x, y, alpha=1.0):
-
-    '''Compute the mixup data. Return mixed inputs, pairs of targets, and lambda'''
-    if alpha > 0.:
-        lam = np.random.beta(alpha, alpha)
-    else:
-        lam = 1.
-    batch_size = x.size()[0]
-    index = np.random.permutation(batch_size)
-    x, y = x.numpy(), y.numpy()
-    mixed_x = torch.Tensor(lam * x + (1 - lam) * x[index,:])
-    y_a, y_b = torch.Tensor(y).type(torch.LongTensor), torch.Tensor(y[index]).type(torch.LongTensor)
-    return mixed_x, y_a, y_b, lam
-
-def mixup_criterion(y_a, y_b, lam):
-    return lambda criterion, pred: lam * criterion(pred, y_a) + (1 - lam) * criterion(pred, y_b)
 
 # train function (forward, backward, update)
 def train(train_loader, model, criterion, cutout,  optimizer, epoch, log):
-  batch_time = AverageMeter()
-  data_time = AverageMeter()
-  losses = AverageMeter()
-  top1 = AverageMeter()
-  top5 = AverageMeter()
-  # switch to train mode
-  model.train()
+    batch_time = AverageMeter()
+    data_time = AverageMeter()
+    losses = AverageMeter()
+    top1 = AverageMeter()
+    top5 = AverageMeter()
+    # switch to train mode
+    model.train()
 
-  end = time.time()
-  for i, (input, target) in enumerate(train_loader):
-    # measure data loading time
-    data_time.update(time.time() - end)
-    if args.mixup:
-        input, target_a, target_b, lam = mixup_data(input, target, args.mixup_alpha)
-        
+    end = time.time()
+    for i, (input, target) in enumerate(train_loader):
+        # measure data loading time
+        data_time.update(time.time() - end)
         if  args.dualcutout == True or args.singlecutout == True :
             cutout1 = cutout.apply(input)
             cutout2 = cutout.apply(input)
             if args.use_cuda:
-                cutout1, cutout2, target_a, target_b = cutout1.cuda(), cutout2.cuda(), target_a.cuda(), target_b.cuda()
-            cutout1_var, cutout2_var, target_a_var, target_b_var = Variable(cutout1,requires_grad=True),Variable(cutout2,requires_grad=True), Variable(target_a), Variable(target_b)
-            loss_func = mixup_criterion(target_a_var, target_b_var, lam)
-            output1 = model(cutout1_var)
-            if args.dualcutout:
-                output2 = model(cutout2_var)
-            
-            if args.dualcutout:
-                loss = (loss_func(criterion, output1)+loss_func(criterion, output2))*0.5 + args.alpha*F.mse_loss(output1, output2)
-            else:
-                loss = loss_func(criterion, output1)
-    
-            total_loss = loss
-        
-        else:
-            if args.use_cuda:
-              input = input.cuda()
-              target_a = target_a.cuda(async=True)
-              target_b = target_b.cuda(async=True)
-              
-            input_var = Variable(input)
-            target_a_var = Variable(target_a)
-            target_b_var = Variable(target_b)
-            loss_func = mixup_criterion(target_a_var, target_b_var, lam)
-            # compute output
-            output1 = model(input_var)
-            loss = loss_func(criterion, output1)
-            total_loss = loss
+                target = target.cuda(async=True)
+                input = input.cuda()
+                cutout1 = cutout1.cuda()
+                cutout2 = cutout2.cuda()
 
-    else:
-        if  args.dualcutout == True or args.singlecutout == True :
-            cutout1 = cutout.apply(input)
-            cutout2 = cutout.apply(input)
-            if args.use_cuda:
-              target = target.cuda(async=True)
-              input = input.cuda()
-              cutout1 = cutout1.cuda()
-              cutout2 = cutout2.cuda()
-    
             input_var = Variable(input)
             cutout1_var = Variable(cutout1)
             cutout2_var = Variable(cutout2)
             target_var = Variable(target)
-            
+
             # compute output
             output1 = model(cutout1_var)
             if args.dualcutout:
@@ -312,60 +218,36 @@ def train(train_loader, model, criterion, cutout,  optimizer, epoch, log):
                 loss = (criterion(output1, target_var)+criterion(output2, target_var))*0.5 + args.alpha*F.mse_loss(output1, output2)
             else:
                 loss = criterion(output1, target_var)
-    
+
             total_loss = loss
         # measure accuracy and record loss
-    
+
         else:
             if args.use_cuda:
-              target = target.cuda(async=True)
-              input = input.cuda()
-            
+                target = target.cuda(async=True)
+                input = input.cuda()
+
             input_var = Variable(input)
             target_var = Variable(target)
-    
+
             # compute output
             output1 = model(input_var)
             loss = criterion(output1, target_var)
-    
+
             total_loss = loss
 
 
 
-    # compute gradient and do SGD step
-    optimizer.zero_grad()
-    total_loss.backward()
-    optimizer.step()
+        # compute gradient and do SGD step
+        optimizer.zero_grad()
+        total_loss.backward()
+        optimizer.step()
 
-    # measure elapsed time
-    batch_time.update(time.time() - end)
-    end = time.time()
-
-    if args.mixup:
-        if args.dualcutout:
-            output = (output1+output2)*0.5
-        else :
-            output = output1
-
-        _, predicted = torch.max(output.data, 1)
-        correct = lam * predicted.eq(target_a_var.data).cpu().sum() + (1 - lam) * predicted.eq(target_b_var.data).cpu().sum()
-        correct=correct*(100.0 / input.size(0))
-        losses.update(total_loss.data[0], input.size(0))
-        top1.update(correct, input.size(0))
         # measure elapsed time
         batch_time.update(time.time() - end)
         end = time.time()
 
-        if i % args.print_freq == 0:
-          print_log('  Epoch: [{:03d}][{:03d}/{:03d}]   '
-                'Time {batch_time.val:.3f} ({batch_time.avg:.3f})   '
-                'Data {data_time.val:.3f} ({data_time.avg:.3f})   '
-                'Loss {loss.val:.4f} ({loss.avg:.4f})   '
-                'Prec@1 {top1.val:.3f} ({top1.avg:.3f})   '
-                .format(epoch, i, len(train_loader), batch_time=batch_time,
-                data_time=data_time, loss=losses, top1=top1) + time_string(), log)
 
-    else:
         if args.dualcutout:
             prec1, prec5 = accuracy((output1.data+output2.data)*0.5, target, topk=(1, 5))
         else:
@@ -378,7 +260,7 @@ def train(train_loader, model, criterion, cutout,  optimizer, epoch, log):
         end = time.time()
 
         if i % args.print_freq == 0:
-          print_log('  Epoch: [{:03d}][{:03d}/{:03d}]   '
+            print_log('  Epoch: [{:03d}][{:03d}/{:03d}]   '
                 'Time {batch_time.val:.3f} ({batch_time.avg:.3f})   '
                 'Data {data_time.val:.3f} ({data_time.avg:.3f})   '
                 'Loss {loss.val:.4f} ({loss.avg:.4f})   '
@@ -388,41 +270,37 @@ def train(train_loader, model, criterion, cutout,  optimizer, epoch, log):
                 data_time=data_time, loss=losses, top1=top1, top5=top5) + time_string(), log)
 
 
-  if args.mixup:
-        print_log('  **Train** Prec@1 {top1.avg:.3f} Error@1 {error1:.3f}'.format(top1=top1, error1=100-top1.avg), log)
-        return top1.avg, losses.avg
-  else:
-        print_log('  **Train** Prec@1 {top1.avg:.3f} Prec@5 {top5.avg:.3f} Error@1 {error1:.3f}'.format(top1=top1, top5=top5, error1=100-top1.avg), log)
-        return top1.avg, losses.avg
+    print_log('  **Train** Prec@1 {top1.avg:.3f} Prec@5 {top5.avg:.3f} Error@1 {error1:.3f}'.format(top1=top1, top5=top5, error1=100-top1.avg), log)
+    return top1.avg, losses.avg
 
 def validate(val_loader, model, criterion, log):
-  losses = AverageMeter()
-  top1 = AverageMeter()
-  top5 = AverageMeter()
+    losses = AverageMeter()
+    top1 = AverageMeter()
+    top5 = AverageMeter()
 
-  # switch to evaluate mode
-  model.eval()
+    # switch to evaluate mode
+    model.eval()
 
-  for i, (input, target) in enumerate(val_loader):
-    if args.use_cuda:
-      target = target.cuda(async=True)
-      input = input.cuda()
-    input_var = torch.autograd.Variable(input, volatile=True)
-    target_var = torch.autograd.Variable(target, volatile=True)
+    for i, (input, target) in enumerate(val_loader):
+        if args.use_cuda:
+            target = target.cuda(async=True)
+            input = input.cuda()
+        input_var = torch.autograd.Variable(input, volatile=True)
+        target_var = torch.autograd.Variable(target, volatile=True)
 
-    # compute output
-    output = model(input_var)
-    loss = criterion(output, target_var)
+        # compute output
+        output = model(input_var)
+        loss = criterion(output, target_var)
 
-    # measure accuracy and record loss
-    prec1, prec5 = accuracy(output.data, target, topk=(1, 5))
-    losses.update(loss.data[0], input.size(0))
-    top1.update(prec1[0], input.size(0))
-    top5.update(prec5[0], input.size(0))
+        # measure accuracy and record loss
+        prec1, prec5 = accuracy(output.data, target, topk=(1, 5))
+        losses.update(loss.data[0], input.size(0))
+        top1.update(prec1[0], input.size(0))
+        top5.update(prec5[0], input.size(0))
 
-  print_log('  **Test** Prec@1 {top1.avg:.3f} Prec@5 {top5.avg:.3f} Error@1 {error1:.3f}'.format(top1=top1, top5=top5, error1=100-top1.avg), log)
+    print_log('  **Test** Prec@1 {top1.avg:.3f} Prec@5 {top5.avg:.3f} Error@1 {error1:.3f}'.format(top1=top1, top5=top5, error1=100-top1.avg), log)
 
-  return top1.avg, losses.avg
+    return top1.avg, losses.avg
 
 best_acc = 0
 def main():
@@ -432,12 +310,8 @@ def main():
 
     tmp = args.temp_dir
     home = args.home_dir
-    
-    """
-    tmp='/tmp/vermav1/'
-    home='/u/79/vermav1/unix/'
-    """
-    
+
+
     dataset=args.dataset
     data_source_dir = os.path.join(home,'data',dataset)
     if not os.path.exists(data_source_dir):
@@ -446,7 +320,7 @@ def main():
     copy_tree(data_source_dir, data_target_dir)
 
     ### set up the experiment directories########
-    exp_name=experiment_name_non_mnist(arch=args.arch,
+    exp_name=experiment_name(arch=args.arch,
                     epochs=args.epochs,
                     dropout=args.dropout,
                     batch_size=args.batch_size,
@@ -458,8 +332,6 @@ def main():
                     dualcutout=args.dualcutout,
                     singlecutout = args.singlecutout,
                     cutsize = args.cutsize,
-                    mixup=args.mixup,
-                    mixup_alpha=args.mixup_alpha,
                     manualSeed=args.manualSeed,
                     job_id=args.job_id,
                     add_name=args.add_name)
@@ -490,25 +362,15 @@ def main():
     print_log("python version : {}".format(sys.version.replace('\n', ' ')), log)
     print_log("torch  version : {}".format(torch.__version__), log)
     print_log("cudnn  version : {}".format(torch.backends.cudnn.version()), log)
-    
-    if args.dataset == 'mnist':
-        train_loader, test_loader = load_mnist(args.data_aug, args.batch_size, args.batch_size, args.use_cuda, data_target_dir)
-        num_classes = 10
-    else:
-        train_loader, test_loader,num_classes=load_data(args.data_aug, args.batch_size,args.workers,args.dataset, data_target_dir)
+
+
+    train_loader, test_loader,num_classes=load_data(args.data_aug, args.batch_size,args.workers,args.dataset, data_target_dir)
 
     print_log("=> creating model '{}'".format(args.arch), log)
     # Init model, criterion, and optimizer
-    if args.dataset == 'mnist':
-        if args.data_aug == 1:
-            size = 24
-        else:
-            size = 28
-                 
-        net =  Net((1,size,size))
-    else:
-        net = models.__dict__[args.arch](num_classes,args.dropout)
-        print_log("=> network :\n {}".format(net), log)
+
+    net = models.__dict__[args.arch](num_classes,args.dropout)
+    print_log("=> network :\n {}".format(net), log)
 
     #net = torch.nn.DataParallel(net, device_ids=list(range(args.ngpu)))
 
