@@ -29,5 +29,5 @@ python cifar10/resnext/main.py --singlecutout --dataset cifar10 --arch wrn28_10 
 ```
 python cifar10/resnext/main.py --dataset cifar10 --arch wrn28_10 \
 --epochs 300 --batch_size 64 --learning_rate 0.1 --data_aug 1 --decay 0.0005 --schedule 150 225 \
---gamma 0.1 0.1 --alpha 0.1 --cutsize 16
+--gamma 0.1 0.1
 ```
