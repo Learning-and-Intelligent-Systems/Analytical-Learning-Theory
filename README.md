@@ -9,6 +9,7 @@ torchvision 0.2.0
 
 
 Add the --temp_dir and --home_dir as appropriate in the following commands.
+For Cifar10 and Cifar100, we used --cutsize 16 and for SVHN we used --cutsize 20
 
 
 ### How to run DualCutout
