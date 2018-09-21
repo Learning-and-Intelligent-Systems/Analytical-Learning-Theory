@@ -22,11 +22,7 @@ https://arxiv.org/pdf/1802.07426.pdf
 
 * Dual-cutout is proposed in our paper based on a new learning theory.
 
-### Requirements
-This code has been tested with  
-python 2.7.9  
-torch 0.3.1  
-torchvision 0.2.0
+
 
 
 Add the --temp_dir and --home_dir as appropriate in the following commands.
@@ -52,3 +48,8 @@ python cifar10/resnext/main.py --dataset cifar10 --arch wrn28_10 \
 --epochs 300 --batch_size 64 --learning_rate 0.1 --data_aug 1 --decay 0.0005 --schedule 150 225 \
 --gamma 0.1 0.1
 ```
+
+This code has been tested with  
+python 2.7.9  
+torch 0.3.1  
+torchvision 0.2.0
