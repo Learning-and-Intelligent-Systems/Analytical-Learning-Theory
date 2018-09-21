@@ -20,6 +20,7 @@ https://arxiv.org/pdf/1802.07426.pdf
 | Single-cutout  | 3.19 ± 0.09 | 18.13 ± 0.28  | 2.23  ± 0.03 |
 | Dual-cutout  |  2.61 ± 0.04 |  17.54    ±  0.09    | 2.06  ± 0.06|
 
+* Dual-cutout is proposed in our paper based on a new learning theory.
 
 ### Requirements
 This code has been tested with  
