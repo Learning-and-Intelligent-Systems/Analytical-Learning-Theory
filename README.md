@@ -1,5 +1,3 @@
-# PyTorch implementation - Towards Generalization in Machine Learning via Analytical Learning Theory
-
 This repository contains a PyTorch implementation code for reproducing the results in our paper:
 
 **Towards Generalization in Machine Learning via Analytical Learning Theory** \
