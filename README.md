@@ -1,6 +1,6 @@
-# Towards Generalization in Machine Learning via Analytical Learning Theory
+# PyTorch implementation - Towards Generalization in Machine Learning via Analytical Learning Theory
 
-This repo contains the code for reproducing the results in our paper:
+This repo contains a PyTorch implementation for reproducing the results in our paper:
 
 **Towards Generalization in Machine Learning via Analytical Learning Theory** \
 *Kenji Kawaguchi, Yoshua Bengio, Vikas Verma, and Leslie Pack Kaelbling* \
@@ -14,6 +14,14 @@ https://arxiv.org/pdf/1802.07426.pdf
   year={2018}
 }
 ```
+
+#### Test error (\%) with WideResNet28_10 and different regularization methods
+|    Regularization Method    | CIFAR-10 |  CIFAR-100 |  SVHN  |
+|:----------:|:--------------:|:--------------:|:------:|
+| Standard   | 3.79  ±  0.07  |  19.85  ±  0.14   |  2.47 ± 0.04|
+| Single-cutout  | 3.19 ± 0.09 | 18.13 ± 0.28  | 2.23  ± 0.03 |
+| Dual-cutout  |  2.61 ± 0.04 |  17.54    ±  0.09    | 2.06  ± 0.06|
+
 
 ### Requirements
 This code has been tested with  
