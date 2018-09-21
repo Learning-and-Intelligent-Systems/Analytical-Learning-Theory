@@ -1,6 +1,6 @@
 # PyTorch implementation - Towards Generalization in Machine Learning via Analytical Learning Theory
 
-This repo contains a PyTorch implementation for reproducing the results in our paper:
+This repository contains a PyTorch implementation code for reproducing the results in our paper:
 
 **Towards Generalization in Machine Learning via Analytical Learning Theory** \
 *Kenji Kawaguchi, Yoshua Bengio, Vikas Verma, and Leslie Pack Kaelbling* \
