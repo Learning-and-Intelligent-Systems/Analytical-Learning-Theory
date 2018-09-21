@@ -6,7 +6,7 @@ https://arxiv.org/pdf/1802.07426.pdf
 
 ```bibtex
 @article{kawaguchi2018generalization,
-  title={Generalization in Machine Learning via Analytical Learning Theory},
+  title={Towards Generalization in Machine Learning via Analytical Learning Theory},
   author={Kawaguchi, Kenji and Bengio, Yoshua and Verma, Vikas and Kaelbling, Leslie Pack},
   journal={arXiv preprint arXiv:1802.07426},
   year={2018}
