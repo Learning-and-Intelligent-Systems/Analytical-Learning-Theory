@@ -1,17 +1,8 @@
 This repository contains a PyTorch implementation code for reproducing the results in our paper:
 
-**Towards Generalization in Machine Learning via Analytical Learning Theory** \
-*Kenji Kawaguchi, Yoshua Bengio, Vikas Verma, and Leslie Pack Kaelbling* \
-https://arxiv.org/pdf/1802.07426.pdf
+**[Towards Generalization in Machine Learning via Analytical Learning Theory](https://arxiv.org/pdf/1802.07426.pdf)** \
+*Kenji Kawaguchi, Yoshua Bengio, Vikas Verma, and Leslie Pack Kaelbling*
 
-```bibtex
-@article{kawaguchi2018generalization,
-  title={Towards Generalization in Machine Learning via Analytical Learning Theory},
-  author={Kawaguchi, Kenji and Bengio, Yoshua and Verma, Vikas and Kaelbling, Leslie Pack},
-  journal={arXiv preprint arXiv:1802.07426},
-  year={2018}
-}
-```
 
 #### Test error (\%) with WideResNet28_10 and different regularization methods
 |    Regularization Method    | CIFAR-10 |  CIFAR-100 |  SVHN  |
