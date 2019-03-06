@@ -1,6 +1,6 @@
 This repository contains a PyTorch implementation code for reproducing the results in our paper:
 
-**[Towards Understanding Generalization via Analytical Learning Theory](http://www.mit.edu/~kawaguch/publications/alt.pdf)** \
+**[Generalization in Machine Learning via Analytical Learning Theory](https://arxiv.org/pdf/1802.07426.pdf)** \
 *Kenji Kawaguchi, Yoshua Bengio, Vikas Verma, and Leslie Pack Kaelbling*
 
 
